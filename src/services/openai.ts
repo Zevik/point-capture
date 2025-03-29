@@ -4,11 +4,16 @@ export interface Point {
   y: number;
 }
 
+export interface OpenAIResponse {
+  points: Point[];
+  rawContent: string;
+}
+
 export async function analyzeImageWithOpenAI(
   imageBase64: string,
   prompt: string,
   apiKey: string
-): Promise<Point[]> {
+): Promise<OpenAIResponse> {
   if (!apiKey) {
     throw new Error("OpenAI API key is required");
   }
@@ -62,7 +67,12 @@ export async function analyzeImageWithOpenAI(
     console.log("Raw content from OpenAI:", content);
     
     // שיפור מנגנון החילוץ של JSON מתשובת OpenAI
-    return extractPointsFromContent(content);
+    const points = extractPointsFromContent(content);
+    
+    return {
+      points,
+      rawContent: content
+    };
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
     throw error;

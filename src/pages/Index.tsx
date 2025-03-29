@@ -21,9 +21,10 @@ const Index = () => {
   const [isApiKeyStored, setIsApiKeyStored] = useState<boolean>(false);
   const [showApiKey, setShowApiKey] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>(
-    'זהה את הצורה המרכזית בתמונה וספק רשימה של נקודות (קואורדינטות x, y) שמגדירות את קווי המתאר שלה. הפלט צריך להיות במבנה JSON של מערך של אובייקטים כאשר כל אובייקט מכיל שדות "x" ו-"y". לדוגמה: [{"x":10,"y":20},{"x":30,"y":40}]. הנקודות צריכות להיות מנורמלות לטווח של 0 עד 100 עבור שני הצירים כאשר (0,0) הוא הפינה השמאלית העליונה ו-(100,100) היא הפינה הימנית התחתונה של התמונה.'
+    'זהה את הצורה המרכזית בתמונה וספק רשימה של נקודות (קואורדינטות x, y) שמגדירות את קווי המתאר שלה. הפלט צריך להיות במבנה JSON של מערך של אובייקטים כאשר כל אובייקט מכיל שדות "x" ו-"y". לדוגמה: {"points":[{"x":10,"y":20},{"x":30,"y":40}]}. הנקודות צריכות להיות מנורמלות לטווח של 0 עד 100 עבור שני הצירים כאשר (0,0) הוא הפינה השמאלית העליונה ו-(100,100) היא הפינה הימנית התחתונה של התמונה.'
   );
   const [points, setPoints] = useState<Point[] | null>(null);
+  const [rawContent, setRawContent] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -40,6 +41,7 @@ const Index = () => {
     setImageFile(file);
     setImageBase64(base64);
     setPoints(null);
+    setRawContent(null);
     setErrorMessage(null);
   };
 
@@ -91,12 +93,16 @@ const Index = () => {
 
     setIsAnalyzing(true);
     setPoints(null);
+    setRawContent(null);
     setErrorMessage(null);
 
     try {
-      const pointsData = await analyzeImageWithOpenAI(imageBase64, prompt, apiKey);
+      const result = await analyzeImageWithOpenAI(imageBase64, prompt, apiKey);
       
-      if (pointsData.length === 0) {
+      // שמירת התוכן המקורי להצגה
+      setRawContent(result.rawContent);
+      
+      if (result.points.length === 0) {
         setErrorMessage("לא זוהו נקודות בתמונה. נסה שוב עם פרומפט אחר.");
         toast({
           title: "אין נקודות",
@@ -104,10 +110,10 @@ const Index = () => {
           variant: "destructive",
         });
       } else {
-        setPoints(pointsData);
+        setPoints(result.points);
         toast({
           title: "הצליח!",
-          description: `זוהו ${pointsData.length} נקודות בתמונה`,
+          description: `זוהו ${result.points.length} נקודות בתמונה`,
         });
       }
     } catch (error) {
@@ -217,7 +223,11 @@ const Index = () => {
         </Card>
 
         <div className="space-y-8">
-          <PointsDisplay points={points} isLoading={isAnalyzing} />
+          <PointsDisplay 
+            points={points} 
+            rawContent={rawContent}
+            isLoading={isAnalyzing} 
+          />
         </div>
       </div>
     </Container>

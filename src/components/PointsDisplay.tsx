@@ -10,10 +10,11 @@ interface Point {
 
 interface PointsDisplayProps {
   points: Point[] | null;
+  rawContent?: string | null;
   isLoading: boolean;
 }
 
-const PointsDisplay: React.FC<PointsDisplayProps> = ({ points, isLoading }) => {
+const PointsDisplay: React.FC<PointsDisplayProps> = ({ points, rawContent, isLoading }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
@@ -83,7 +84,7 @@ const PointsDisplay: React.FC<PointsDisplayProps> = ({ points, isLoading }) => {
     );
   }
   
-  if (!points) return null;
+  if (!points && !rawContent) return null;
   
   return (
     <Card>
@@ -91,29 +92,48 @@ const PointsDisplay: React.FC<PointsDisplayProps> = ({ points, isLoading }) => {
         <CardTitle>תוצאות הניתוח</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="json">
+        <Tabs defaultValue={points && points.length > 0 ? "visual" : "raw"}>
           <TabsList className="mb-4">
-            <TabsTrigger value="visual">תצוגה חזותית</TabsTrigger>
-            <TabsTrigger value="json">JSON</TabsTrigger>
+            {points && points.length > 0 && <TabsTrigger value="visual">תצוגה חזותית</TabsTrigger>}
+            {points && points.length > 0 && <TabsTrigger value="json">JSON</TabsTrigger>}
+            <TabsTrigger value="raw">תגובה מקורית</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="visual" className="pt-2">
-            <div className="canvas-container bg-white">
-              <canvas 
-                ref={canvasRef} 
-                width={500} 
-                height={400}
-                className="w-full h-auto"
-              ></canvas>
-            </div>
-            <p className="text-sm text-gray-500 mt-2 text-center">
-              סה"כ {points.length} נקודות
-            </p>
-          </TabsContent>
+          {points && points.length > 0 && (
+            <TabsContent value="visual" className="pt-2">
+              <div className="canvas-container bg-white">
+                <canvas 
+                  ref={canvasRef} 
+                  width={500} 
+                  height={400}
+                  className="w-full h-auto border rounded-md"
+                ></canvas>
+              </div>
+              <p className="text-sm text-gray-500 mt-2 text-center">
+                סה"כ {points.length} נקודות
+              </p>
+            </TabsContent>
+          )}
           
-          <TabsContent value="json" className="pt-2">
-            <div className="points-json">
-              <pre>{JSON.stringify({ points }, null, 2)}</pre>
+          {points && points.length > 0 && (
+            <TabsContent value="json" className="pt-2">
+              <div className="points-json">
+                <pre className="bg-gray-100 p-4 rounded-md overflow-auto max-h-[400px]">
+                  {JSON.stringify({ points }, null, 2)}
+                </pre>
+              </div>
+            </TabsContent>
+          )}
+          
+          <TabsContent value="raw" className="pt-2">
+            <div className="raw-content">
+              <h3 className="text-sm font-medium mb-2">תגובה מקורית מ-OpenAI:</h3>
+              <pre className="bg-gray-100 p-4 rounded-md overflow-auto max-h-[400px] text-xs">
+                {rawContent || "אין תגובה זמינה"}
+              </pre>
+              <p className="text-xs text-gray-500 mt-2">
+                השתמש בתוכן זה כדי להבין איך לעדכן את הפרומפט לקבלת תוצאות טובות יותר
+              </p>
             </div>
           </TabsContent>
         </Tabs>
