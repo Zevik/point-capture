@@ -21,10 +21,11 @@ const Index = () => {
   const [isApiKeyStored, setIsApiKeyStored] = useState<boolean>(false);
   const [showApiKey, setShowApiKey] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>(
-    'זהה את הצורה המרכזית בתמונה וספק רשימה של עד 100 נקודות (קואורדינטות x, y) שמגדירות את קווי המתאר שלה. הפלט צריך להיות במבנה JSON של מערך של אובייקטים עם שדות "x" ו-"y". הנקודות צריכות להיות מנורמלות לטווח של 0 עד 100 עבור שני הצירים.'
+    'זהה את הצורה המרכזית בתמונה וספק רשימה של נקודות (קואורדינטות x, y) שמגדירות את קווי המתאר שלה. הפלט צריך להיות במבנה JSON של מערך של אובייקטים כאשר כל אובייקט מכיל שדות "x" ו-"y". לדוגמה: [{"x":10,"y":20},{"x":30,"y":40}]. הנקודות צריכות להיות מנורמלות לטווח של 0 עד 100 עבור שני הצירים כאשר (0,0) הוא הפינה השמאלית העליונה ו-(100,100) היא הפינה הימנית התחתונה של התמונה.'
   );
   const [points, setPoints] = useState<Point[] | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // בדיקה אם יש מפתח API שמור בלוקל סטורג'
@@ -39,6 +40,7 @@ const Index = () => {
     setImageFile(file);
     setImageBase64(base64);
     setPoints(null);
+    setErrorMessage(null);
   };
 
   const handleApiKeySave = () => {
@@ -89,19 +91,32 @@ const Index = () => {
 
     setIsAnalyzing(true);
     setPoints(null);
+    setErrorMessage(null);
 
     try {
       const pointsData = await analyzeImageWithOpenAI(imageBase64, prompt, apiKey);
-      setPoints(pointsData);
-      toast({
-        title: "הצליח!",
-        description: `זוהו ${pointsData.length} נקודות בתמונה`,
-      });
+      
+      if (pointsData.length === 0) {
+        setErrorMessage("לא זוהו נקודות בתמונה. נסה שוב עם פרומפט אחר.");
+        toast({
+          title: "אין נקודות",
+          description: "לא זוהו נקודות בתמונה. נסה שוב עם פרומפט אחר.",
+          variant: "destructive",
+        });
+      } else {
+        setPoints(pointsData);
+        toast({
+          title: "הצליח!",
+          description: `זוהו ${pointsData.length} נקודות בתמונה`,
+        });
+      }
     } catch (error) {
       console.error("Analysis error:", error);
+      const errorMsg = (error as Error).message;
+      setErrorMessage(errorMsg);
       toast({
         title: "שגיאה בניתוח התמונה",
-        description: (error as Error).message,
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -119,7 +134,7 @@ const Index = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card>
+        <Card className="h-fit">
           <CardHeader>
             <CardTitle>העלאת תמונה והגדרות</CardTitle>
           </CardHeader>
@@ -132,7 +147,7 @@ const Index = () => {
               </label>
               
               {isApiKeyStored ? (
-                <div className="flex items-center space-x-2 space-x-reverse rtl:space-x-reverse">
+                <div className="flex items-center gap-2 rtl:flex-row-reverse">
                   <Input
                     id="apiKey"
                     type={showApiKey ? "text" : "password"}
@@ -153,7 +168,7 @@ const Index = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center space-x-2 space-x-reverse rtl:space-x-reverse">
+                <div className="flex items-center gap-2 rtl:flex-row-reverse">
                   <Input
                     id="apiKey"
                     type={showApiKey ? "text" : "password"}
@@ -180,6 +195,7 @@ const Index = () => {
                   </Button>
                 </div>
               )}
+              <p className="text-xs text-muted-foreground">המפתח נשמר רק בדפדפן שלך ולא נשלח לשרת</p>
             </div>
 
             <PromptInput prompt={prompt} setPrompt={setPrompt} />
@@ -191,6 +207,12 @@ const Index = () => {
             >
               {isAnalyzing ? "מנתח..." : "נתח תמונה"}
             </Button>
+            
+            {errorMessage && (
+              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+                <strong>שגיאה בניתוח התמונה:</strong> {errorMessage}
+              </div>
+            )}
           </CardContent>
         </Card>
 

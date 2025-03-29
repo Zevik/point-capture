@@ -3,6 +3,7 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 
 interface PromptInputProps {
   prompt: string;
@@ -24,9 +25,17 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt }) => {
           variant="ghost"
           size="sm"
           onClick={toggleExpand}
-          className="text-xs"
+          className="text-xs flex items-center gap-1"
         >
-          {isExpanded ? "הסתר" : "הרחב"}
+          {isExpanded ? (
+            <>
+              הקטן <ArrowUp className="h-3 w-3" />
+            </>
+          ) : (
+            <>
+              הרחב <ArrowDown className="h-3 w-3" />
+            </>
+          )}
         </Button>
       </div>
       <Textarea
@@ -37,6 +46,9 @@ const PromptInput: React.FC<PromptInputProps> = ({ prompt, setPrompt }) => {
         className={`min-h-[100px] text-right ${isExpanded ? 'min-h-[200px]' : ''}`}
         dir="rtl"
       />
+      <p className="text-xs text-gray-500">
+        דוגמה: "זהה את הצורה המרכזית בתמונה וספק רשימה של עד 100 נקודות (x, y) שמגדירות את קווי המתאר שלה. הפלט חייב להיות במבנה JSON של מערך של אובייקטים עם שדות x ו-y. הערכים צריכים להיות בטווח של 0 עד 100."
+      </p>
     </div>
   );
 };
